@@ -16,6 +16,8 @@ const Home = () => {
 
   const [lookForMove, setLookForMove] = useState(true);
 
+  const [onLine1, setOnLine1] = useState(true);
+    
   // Handle column block addition (when clicking on the column area)
   const handleClickColumn1 = () => {
     if (col1Blocks < 10) {
@@ -77,9 +79,11 @@ const Home = () => {
   // Track mouse position during drag
   const handleMouseMove = (e: React.MouseEvent) => {
     mousePos.current = { x: e.clientX, y: e.clientY };
-    if (lineStart && lookForMove) {
+    if (lineStart && lookForMove && onLine1) {
       setLineEnd({ x: mousePos.current.x, y: mousePos.current.y });
-    } 
+    } else if (onLine1 == false && lookForMove){
+        setLineEnd2({ x: mousePos.current.x, y: mousePos.current.y });
+    }
   };
 
 
@@ -94,19 +98,21 @@ const Home = () => {
     // Calculate the center of the element (used to attach the line to the center of the box)
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-  
+    if (onLine1){
     if (lineStart && lastBoxClicked === boxNum - 1) {
       // For specific connections (e.g., 1-2, 3-4)
       if (boxNum === 2 || boxNum === 4) {
         console.log(`${centerX}, ${centerY}`)
         setLineEnd({ x: centerX, y: centerY });
         setLookForMove(false);
+        setOnLine1(false);
       }
     } else if (lineStart && lastBoxClicked === boxNum + 1) {
       // For reverse connections (e.g., 2-1, 4-3)
       if (boxNum === 1 || boxNum === 3) {
         setLineEnd({ x: centerX, y: centerY });
         setLookForMove(false);
+        setOnLine1(false);
       }
     } else if (lineStart) {
       // If there was a line started, but not connected yet, set the last box clicked   
@@ -117,6 +123,34 @@ const Home = () => {
         console.log(`${centerX}, ${centerY}`)
         setLineStart({ x: centerX, y: centerY });
       }
+    } }
+
+    else {
+        setLookForMove(true);
+        if (lineStart2 && lastBoxClicked === boxNum - 1) {
+            // For specific connections (e.g., 1-2, 3-4)
+            if (boxNum === 2 || boxNum === 4) {
+              console.log(`${centerX}, ${centerY}`)
+              setLineEnd2({ x: centerX, y: centerY });
+              setLookForMove(false);
+            }
+          } else if (lineStart2 && lastBoxClicked === boxNum + 1) {
+            // For reverse connections (e.g., 2-1, 4-3)
+            if (boxNum === 1 || boxNum === 3) {
+              setLineEnd2({ x: centerX, y: centerY });
+              setLookForMove(false);
+            }
+          } else if (lineStart2) {
+            // If there was a line started, but not connected yet, set the last box clicked   
+            setLastBoxClicked(boxNum);
+          } else {
+            // Start the line from the current box (1, 2, 3, or 4)
+            if (boxNum === 1 || boxNum === 2 || boxNum === 3 || boxNum === 4) {
+              console.log(`${centerX}, ${centerY}`)
+              setLineStart2({ x: centerX, y: centerY });
+            }
+          }
+      
     }
   
     // Set the last box clicked
@@ -127,6 +161,8 @@ const Home = () => {
   // State to track the start and end of the line
     const [lineStart, setLineStart] = useState<{ x: number, y: number } | null>(null);
     const [lineEnd, setLineEnd] = useState<{ x: number, y: number } | null>(null);
+    const [lineStart2, setLineStart2] = useState<{ x: number, y: number } | null>(null);
+    const [lineEnd2, setLineEnd2] = useState<{ x: number, y: number } | null>(null);
   
     // References for mouse positions
     const mousePos = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
@@ -261,6 +297,27 @@ const Home = () => {
                     y1={lineStart.y}
                     x2={lineEnd.x}
                     y2={lineEnd.y}
+                    stroke="white"
+                    strokeWidth={2}
+                />
+                </svg>
+            )}
+            {lineStart2 && lineEnd2 && (
+                <svg
+                style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                }}
+                >
+                <line
+                    x1={lineStart2.x}
+                    y1={lineStart2.y}
+                    x2={lineEnd2.x}
+                    y2={lineEnd2.y}
                     stroke="white"
                     strokeWidth={2}
                 />
