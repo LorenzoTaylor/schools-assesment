@@ -1,6 +1,7 @@
 import React from "react";
 import styled, { keyframes } from "styled-components";
 
+// Keyframe for floating animation
 const float = keyframes`
   0% {
     transform: translateY(0);
@@ -13,7 +14,7 @@ const float = keyframes`
   }
 `;
 
-const AnimatedWrapper = styled.div`
+const AnimatedWrapper = styled.div<{ delay?: string }>`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -25,19 +26,33 @@ const AnimatedWrapper = styled.div`
 
 interface BlockProps {
   index: number;
-  onDragStart: (e: React.DragEvent, index: number) => void;
-  onDragEnd: (e: React.DragEvent) => void;
+  onDragStart?: (e: React.DragEvent, index: number) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
 }
 
 const Block: React.FC<BlockProps> = ({ index, onDragStart, onDragEnd }) => {
   const animationDelay = `${index * 0.2}s`;
 
+  // Handle drag start
+  const handleDragStart = (e: React.DragEvent) => {
+    if (onDragStart) {
+      onDragStart(e, index); // Call onDragStart if provided
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = (e: React.DragEvent) => {
+    if (onDragEnd) {
+      onDragEnd(e); // Call onDragEnd if provided
+    }
+  };
+
   return (
     <AnimatedWrapper delay={animationDelay}>
       <div
         draggable
-        onDragStart={(e) => onDragStart(e, index)}
-        onDragEnd={(e) => onDragEnd(e)}
+        onDragStart={handleDragStart}  // Conditionally call handleDragStart
+        onDragEnd={handleDragEnd}  // Conditionally call handleDragEnd
         style={{
           width: "50px",  // Smaller block width
           height: "50px",  // Smaller block height

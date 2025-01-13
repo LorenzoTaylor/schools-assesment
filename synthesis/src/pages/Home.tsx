@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Block from "../components/Block.tsx";
 import MaterialUISwitch from "../components/Switch.tsx";
 import { Stack } from "@mui/material";
@@ -15,6 +15,10 @@ import {
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
 import { SelectChangeEvent } from "@mui/material";
+import FancyText from '@carefully-coded/react-text-gradient';
+import SoundButton from "../components/SoundButton.tsx";
+
+
 
 const Home = () => {
   // State to track the number of blocks in each column
@@ -36,6 +40,19 @@ const Home = () => {
   const [onLine1, setOnLine1] = useState(true); // New state for interaction mode
   const [interactionMode, setInteractionMode] = useState("drawCompare"); // 'none', 'addRemove', 'drawCompare'
   const [comparisonAnimation, setComparisonAnimation] = useState(false); // Track animation state
+  const [playSounds, setPlaySounds] = useState(true);
+
+  let clickSoft = new Audio("/assets/sounds/clickSoft.wav");
+  let clickHard = new Audio("/assets/sounds/clickHard.wav");
+  
+  clickSoft.volume = 0.2; // 20% of max volume
+  clickHard.volume = 0.2; // 50% of max volume
+
+  const handleSoundToggle = () => {
+    console.log( `clicked,${playSounds},`)
+    setPlaySounds((prev) => !prev); // Toggle the playSounds state
+
+  };
 
   // Function to handle changes in interaction mode
   const handleInteractionModeChange = (event: SelectChangeEvent<string>) => {
@@ -51,21 +68,29 @@ const Home = () => {
 
   // Handle column block addition (when clicking on the column area)
   const handleClickColumn1 = () => {
-    if (col1Blocks < 10) {
+    if (!lineStart && ! lineStart2 && col1Blocks < 10 && interactionMode === "addRemove") {
       setCol1Blocks(col1Blocks + 1);
+      if (playSounds){
+        clickHard.play();
+      }
     }
   };
 
   const handleClickColumn2 = () => {
-    if (col2Blocks < 10) {
+    if (!lineStart && ! lineStart2 && col2Blocks < 10 && interactionMode === "addRemove") {
       setCol2Blocks(col2Blocks + 1);
+      if (playSounds){
+        clickHard.play();
+      }
     }
   };
 
   // Handle drag start
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedBlockIndex(index);
-    startDragPosition.current = { x: e.clientX, y: e.clientY }; // Capture the starting drag position
+    if (!lineStart && ! lineStart2 && interactionMode === "addRemove"){
+      setDraggedBlockIndex(index);
+      startDragPosition.current = { x: e.clientX, y: e.clientY }; // Capture the starting drag position
+    }
   };
 
   // Handle drag end to check if the block was moved a certain distance
@@ -88,7 +113,7 @@ const Home = () => {
     }
   };
   function handleCol2(e: any) {
-    if (col2Blocks < 10) {
+    if (col2Blocks < 10 && interactionMode === "addRemove") {
       setCol2Blocks(Math.max(0, parseInt(e.target.value)) || 0);
     } else if (col2Blocks == 10 && e.target.value < 10) {
       setCol2Blocks(Math.max(0, parseInt(e.target.value)) || 0);
@@ -97,7 +122,7 @@ const Home = () => {
   }
 
   function handleCol1(e: any) {
-    if (col1Blocks < 10) {
+    if (col1Blocks < 10 && interactionMode === "addRemove") {
       setCol1Blocks(Math.max(0, parseInt(e.target.value)) || 0);
     } else if (col1Blocks == 10 && e.target.value < 10) {
       setCol1Blocks(Math.max(0, parseInt(e.target.value)) || 0);
@@ -130,72 +155,121 @@ const Home = () => {
     // Get the bounding rectangle of the clicked element
     const rect = targetElement.getBoundingClientRect();
 
+    if (interactionMode === "drawCompare"){
+      // Calculate the center of the element (used to attach the line to the center of the box)
+    var centerX = rect.left + rect.width / 2;
+    var centerY = rect.top + rect.height / 2;
+    if (centerY > 450){centerY = centerY/1.05} else (centerY = centerY*1.12)
+
+    // A map for valid connections (1-2, 2-1, 3-4, 4-3)
+const validConnections = [
+  [1, 2], // 1 connects to 2
+  [2, 1], // 2 connects to 1
+  [3, 4], // 3 connects to 4
+  [4, 3]  // 4 connects to 3
+];
+
+if (onLine1) {
+  // Check for forward connections (1 -> 2, 3 -> 4)
+  if (lineStart && validConnections.some(([start, end]) => start === lastBoxClicked && end === boxNum)) {
+    console.log(`${centerX}, ${centerY}`);
+    setLineEnd({ x: centerX, y: centerY });
+    setLookForMove(false);
+    setOnLine1(false);
+    if (playSounds){
+      clickSoft.play();
+    }
+  } else {
+    // Reset if no valid connection found
+    setLineStart(null);
+    setLineEnd(null);
+  }
+
+  // Check for reverse connections (2 -> 1, 4 -> 3)
+  if (lineStart && validConnections.some(([start, end]) => end === lastBoxClicked && start === boxNum)) {
+    console.log("end");
+    setLineEnd2({ x: centerX, y: centerY });
+    setLookForMove(false);
+    if (playSounds){
+      clickSoft.play();
+    }
+  } else {
+    setLineStart2(null);
+    setLineEnd2(null);
+  }
+
+  // If no line is started, set the last box clicked
+  if (lineStart) {
+    setLastBoxClicked(boxNum);
+    if (playSounds){
+      clickSoft.play();
+    }
+  } else {
+    // Start a new line from the current box
+    if ([1, 2, 3, 4].includes(boxNum)) {
+      console.log(`${centerX}, ${centerY}`);
+      setLineStart({ x: centerX, y: centerY });
+      if (playSounds){
+        clickSoft.play();
+      }
+    }
+  }
+} else {
+  setLookForMove(true);
+
+  // Check for forward connections (1 -> 2, 3 -> 4) for second line
+  if (lineStart2 && validConnections.some(([start, end]) => start === lastBoxClicked && end === boxNum)) {
+    console.log(`${centerX}, ${centerY}`);
+    setLineEnd2({ x: centerX, y: centerY });
+    setLookForMove(false);
+    if (playSounds){
+      clickSoft.play();
+    }
+  }
+
+  // Check for reverse connections (2 -> 1, 4 -> 3) for second line
+  if (lineStart2 && validConnections.some(([start, end]) => end === lastBoxClicked && start === boxNum)) {
+    console.log("end");
+    setLineEnd2({ x: centerX, y: centerY });
+    setLookForMove(false);
+    if (playSounds){
+      clickSoft.play();
+    }
+  } else {
+    setLineStart2(null);
+    setLineEnd2(null);
+  }
+
+  // If no line is started, set the last box clicked
+  if (lineStart2) {
+    setLastBoxClicked(boxNum);
+    if (playSounds){
+      clickSoft.play();
+    }
+  } else {
+    // Start a new line from the current box
+    if ([1, 2, 3, 4].includes(boxNum)) {
+      console.log(`${centerX}, ${centerY}`);
+      setLineStart2({ x: centerX, y: centerY });
+      if (playSounds){
+        clickSoft.play();
+      }
+    }
+  }
+}
+
+    
+
+    // Set the last box clicked
+    setLastBoxClicked(boxNum);
+    }
     if (interactionMode === "addRemove") {
       setLineStart(null);
       setLineEnd(null);
       setLineStart2(null);
       setLineEnd2(null);
       return; // Block further line creation
-    } else if (interactionMode === "drawCompare"){
-      // Calculate the center of the element (used to attach the line to the center of the box)
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    if (onLine1) {
-      if (lineStart && lastBoxClicked === boxNum - 1) {
-        // For specific connections (e.g., 1-2, 3-4)
-        if (boxNum === 2 || boxNum === 4) {
-          console.log(`${centerX}, ${centerY}`);
-          setLineEnd({ x: centerX, y: centerY });
-          setLookForMove(false);
-          setOnLine1(false);
-        }
-      } else if (lineStart && lastBoxClicked === boxNum + 1) {
-        // For reverse connections (e.g., 2-1, 4-3)
-        if (boxNum === 1 || boxNum === 3) {
-          setLineEnd({ x: centerX, y: centerY });
-          setLookForMove(false);
-          setOnLine1(false);
-        }
-      } else if (lineStart) {
-        // If there was a line started, but not connected yet, set the last box clicked
-        setLastBoxClicked(boxNum);
-      } else {
-        // Start the line from the current box (1, 2, 3, or 4)
-        if (boxNum === 1 || boxNum === 2 || boxNum === 3 || boxNum === 4) {
-          console.log(`${centerX}, ${centerY}`);
-          setLineStart({ x: centerX, y: centerY });
-        }
-      }
-    } else {
-      setLookForMove(true);
-      if (lineStart2 && lastBoxClicked === boxNum - 1) {
-        // For specific connections (e.g., 1-2, 3-4)
-        if (boxNum === 2 || boxNum === 4) {
-          console.log(`${centerX}, ${centerY}`);
-          setLineEnd2({ x: centerX, y: centerY });
-          setLookForMove(false);
-        }
-      } else if (lineStart2 && lastBoxClicked === boxNum + 1) {
-        // For reverse connections (e.g., 2-1, 4-3)
-        if (boxNum === 1 || boxNum === 3) {
-          setLineEnd2({ x: centerX, y: centerY });
-          setLookForMove(false);
-        }
-      } else if (lineStart2) {
-        // If there was a line started, but not connected yet, set the last box clicked
-        setLastBoxClicked(boxNum);
-      } else {
-        // Start the line from the current box (1, 2, 3, or 4)
-        if (boxNum === 1 || boxNum === 2 || boxNum === 3 || boxNum === 4) {
-          console.log(`${centerX}, ${centerY}`);
-          setLineStart2({ x: centerX, y: centerY });
-        }
-      }
-    }
-
-    // Set the last box clicked
-    setLastBoxClicked(boxNum);
-    }
+    } 
 
     
   };
@@ -231,6 +305,28 @@ const Home = () => {
     transform-origin: 0% 50%;
   }
 `;
+useEffect(() => {
+  if (typeof window !== "undefined" && window.particlesJS) {
+    window.particlesJS("particles-js", {
+      particles: {
+        number: {
+          value: 100,
+          density: {
+            enable: true,
+            value_area: 800,
+          },
+        },
+        size: {
+          value: 5,
+        },
+        move: {
+          enable: true,
+          speed: 1,
+        },
+      },
+    });
+  }
+}, []);
 
   return (
     <div
@@ -243,7 +339,9 @@ const Home = () => {
         justifyContent: "space-between",
       }}
       onMouseMove={handleMouseMove}
+      id="particles-js"
     >
+      <script src="particles.js"></script>
       <Stack
         sx={{
           position: "absolute",
@@ -262,7 +360,8 @@ const Home = () => {
           zIndex: "12",
         }}
       >
-        <GameButton />
+        <SoundButton onClick={handleSoundToggle} />
+        <GameButton to={"/game"}/>
         <PanelButton onClick={toggleControlPanel} />
 
       </Stack>
@@ -291,35 +390,13 @@ const Home = () => {
           opacity: 1,
           animation: `${menu} 1s ease forwards`,
           zIndex: "10",
+          background: 'linear-gradient(45deg, rgba(0, 221, 255, 0.5), rgba(184, 243, 239, 0.4))'
         }}
       >
       
           <Typography variant="h6" color="text.primary">
             Control Panel
           </Typography>
-
-        {/* Block Count Inputs */}
-        <div style={{ paddingBottom: "15px" }}>
-          <div style={{ marginBottom: "10px" }}>
-            <Typography variant="body2">Column 1 Blocks</Typography>
-            <input
-              type="number"
-              value={col1Blocks}
-              onChange={(e) => handleCol1(e)}
-              style={{ padding: "5px", width: "50px" }}
-            />
-          </div>
-
-          <div>
-            <Typography variant="body2">Column 2 Blocks</Typography>
-            <input
-              type="number"
-              value={col2Blocks}
-              onChange={(e) => handleCol2(e)}
-              style={{ padding: "5px", width: "50px" }}
-            />
-          </div>
-        </div>
 
         {/* Interaction Mode */}
         <FormControl fullWidth>
@@ -358,36 +435,37 @@ const Home = () => {
 
         {/* Comparison Sign */}
 {col1Blocks !== col2Blocks && (
-  <Typography
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontSize: "64px",
-      fontWeight: "bold",
-      zIndex: 9,
-      color: col1Blocks > col2Blocks ? "rgba(95, 209, 229, 0.5)" : "rgba(95, 209, 229, 0.5)", 
-    }}
-  >
+  <FancyText
+    style={{position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    fontSize: "120px",
+    fontWeight: "bold",
+    zIndex: 9,}}
+      gradient={{ from: 'rgba(184, 243, 239)', to: 'rgb(33 148 182)' }}
+      animate
+      animateDuration={1000}
+    >
     {col1Blocks > col2Blocks ? ">" : "<"}
-  </Typography>
+  </FancyText>
 )}
 {col1Blocks === col2Blocks && (
-  <Typography
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontSize: "64px",
-      fontWeight: "bold",
-      zIndex: 9,
-      color: "rgba(95, 209, 229, 0.5)", // Color when blocks are equal
-    }}
+  <FancyText
+  style={{
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  fontSize: "120px",
+  fontWeight: "bold",
+  zIndex: 9,}}
+    gradient={{ from: 'rgba(184, 243, 239)', to: 'rgb(33 148 182)' }}
+    animate
+    animateDuration={1000}
   >
     {"="}
-  </Typography>
+  </FancyText>
 )}
 
       {/* Column 1 */}
@@ -493,40 +571,128 @@ const Home = () => {
               onClick={(e) => handleBoxClick(e, 2, 2)}
             ></div>
           </div>
+          {interactionMode == "addRemove" ? (
           <Box
-            sx={{
-                position: "absolute",
-                width: "80vw",
-                backgroundColor: "rgba(184, 243, 239, 0.5)", // Light icy blue with transparency
-                height: "70px",
-                top: "88vh",
-                left: "10vw",
-                borderRadius:    "5px", // Rounded corners
-                border: "2px solid white", // White border
-                boxShadow: "0 0 15px 5px rgba(255, 255, 255, 0.6)", // Slight white glow
-                display: "flex",
-                flexDirection: "row"
-            }}
-            >
-          <div style={{ marginBottom: "10px" }}>
-            <input
-              type="number"
-              value={col1Blocks}
-              onChange={(e) => handleCol1(e)}
-              style={{ padding: "5px", width: "50px" }}
-            />
-          </div>
+  sx={{
+    position: "absolute",
+    width: "80vw",
+    backgroundColor: "rgba(184, 243, 239, 0.3)",
+    height: "70px",
+    top: "88vh",
+    left: "10vw",
+    borderRadius: "20px",
+    border: "2px solid rgba(255, 255, 255, 0.6)",
+    display: "flex",
+    flexDirection: "row",
+    gap: "40vw",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: "8px",
+    zIndex: "30",
+    boxShadow: "0 0 10px rgba(0, 221, 255, 0.6)",
+    background: 'linear-gradient(45deg,rgba(0, 221, 255, 0.3), rgba(184, 243, 239, 0.4))',
+    paddingBottom: "8px",
 
-          <div>
-            <input
-              type="number"
-              value={col2Blocks}
-              onChange={(e) => handleCol2(e)}
-              style={{ padding: "5px", width: "50px" }}
-            />
-          </div>
+  }}
+>
+  
+  <div style={{ position: "relative" }}>
+    <input
+      type="number"
+      value={col1Blocks}
+      onChange={(e) => handleCol1(e)}
+      style={{
+        padding: "5px 5px 5px 14px",
+        width: "50px",
+        height: "50px",
+        fontSize: "64px",
+        border: "none",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: "5px",
+        color: "#00D7FF",
+        outline: "none",
+        boxShadow: "0 0 15px rgba(0, 221, 255, 0.6)",
+      }}
+    />
+  </div>
 
-            </Box>
+  <div style={{ position: "relative" }}>
+
+    <input
+      type="number"
+      value={col2Blocks}
+      onChange={(e) => handleCol2(e)}
+      style={{
+        padding: "5px 5px 5px 14px",
+        width: "50px",
+        height: "50px",
+        fontSize: "64px",
+        border: "none",
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        borderRadius: "5px",
+        color: "#00D7FF",
+        outline: "none",
+        boxShadow: "0 0 15px rgba(0, 221, 255, 0.6)",
+      }}
+    />
+  </div>
+</Box> ) : (
+  <Box
+                      sx={{
+                          position: "absolute",
+                          width: "80vw",
+                          backgroundColor: "rgba(184, 243, 239, 0.5)", // Light icy blue with transparency
+                          height: "70px",
+                          top: "88vh",
+                          left: "10vw",
+                          borderRadius:    "5px", // Rounded corners
+                          border: "2px solid white", // White border
+                          display: "flex",
+                          flexDirection: "row",
+                          gap: "43vw",
+                          maxWidth: "80vw",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          paddingTop: "8px",
+                          paddingBottom: "8px",
+                          background: 'linear-gradient(45deg, rgba(0, 221, 255, 0.3), rgba(184, 243, 239, 0.4))',
+
+                      }}
+                      >
+                    <div style={{}}>
+                    <FancyText
+                        style={{position: "absolute",
+                        transform: "translate(-50%, -50%)",
+                        fontSize: "70px",
+                        fontWeight: "bold",
+                        fontFamily: "Montserrat, serif",
+                        zIndex: 9,}}
+                          gradient={{ from: 'rgb(59, 229, 255)', to: 'rgb(59, 229, 255)' }}
+                          animate
+                          animateDuration={70000000000}
+                        >
+                        {col1Blocks}
+                      </FancyText>
+                    </div>
+                    <div>
+                    <FancyText
+                        style={{position: "absolute",
+                        transform: "translate(-50%, -50%)",
+                        fontSize: "70px",
+                        fontWeight: "bold",
+                        fontFamily: "Montserrat, serif",
+                        zIndex: 9,}}
+                          gradient={{ from: 'rgb(59, 229, 255)', to: 'rgb(59, 229, 255)' }}
+                          animate
+                          animateDuration={100000000000000}
+                        >
+                        {col2Blocks}
+                      </FancyText>
+                    </div>
+          
+                      </Box>)}
+
+
 
 
         </div>
