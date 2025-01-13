@@ -289,12 +289,6 @@ if (onLine1) {
   // References for mouse positions
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const [isSwitchOn, setIsSwitchOn] = useState(false); // Track switch state
-
-  // Handle switch toggle
-  const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsSwitchOn(event.target.checked);
-  };
   const menu = keyframes`
   0% {
     transform: scale(0);
@@ -305,28 +299,6 @@ if (onLine1) {
     transform-origin: 0% 50%;
   }
 `;
-useEffect(() => {
-  if (typeof window !== "undefined" && window.particlesJS) {
-    window.particlesJS("particles-js", {
-      particles: {
-        number: {
-          value: 100,
-          density: {
-            enable: true,
-            value_area: 800,
-          },
-        },
-        size: {
-          value: 5,
-        },
-        move: {
-          enable: true,
-          speed: 1,
-        },
-      },
-    });
-  }
-}, []);
 
   return (
     <div
