@@ -1,20 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Block from "../components/Block.tsx";
-import MaterialUISwitch from "../components/Switch.tsx";
 import { Stack } from "@mui/material";
 import GameButton from "../components/GameButton.tsx";
-import PanelButton from "../components/PanelButton.tsx";
 import {
   Box,
   Typography,
-  Button,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
 } from "@mui/material";
-import { keyframes } from "@emotion/react";
-import { SelectChangeEvent } from "@mui/material";
 import FancyText from '@carefully-coded/react-text-gradient';
 import Popup from "../components/Popup.tsx";
 import CloseIcon from '@mui/icons-material/Close';
@@ -26,7 +17,6 @@ const Game = () => {
   const [inputValue, setInputValue] = useState("");
   const [tally, setTally] = useState(0);
   const [total, setTotal] = useState(0);
-  const [interactionMode, setInteractionMode] = useState(""); // 'freeplay' or 'timeTrial'
   const [isFreePlay, setIsFreePlay] = useState(false); // Free Play state
   const [showInstructions, setShowInstructions] = useState(false); // Show instructions for Free Play
   const [countdown, setCountdown] = useState(10); // Countdown timer for Free Play

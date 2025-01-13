@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import Block from "../components/Block.tsx";
-import MaterialUISwitch from "../components/Switch.tsx";
 import { Stack } from "@mui/material";
 import GameButton from "../components/GameButton.tsx";
 import PanelButton from "../components/PanelButton.tsx";
@@ -148,7 +147,7 @@ const Home = () => {
   };
 
   // Handle clicking on a red box to start or finalize the line
-  const handleBoxClick = (e: React.MouseEvent, column: 1 | 2, boxNum: any) => {
+  const handleBoxClick = (e: React.MouseEvent, boxNum: any) => {
     // Get the target element (the red box clicked)
     const targetElement = e.target as HTMLElement;
 
@@ -466,7 +465,7 @@ if (onLine1) {
           >
             <div
               style={{ height: "20%", width: "180%", zIndex: "10" }}
-              onClick={(e) => handleBoxClick(e, 2, 3)}
+              onClick={(e) => handleBoxClick(e, 3)}
             ></div>
             <div
               style={{
@@ -487,7 +486,7 @@ if (onLine1) {
             </div>
             <div
               style={{ height: "20%", width: "180%", zIndex: "10" }}
-              onClick={(e) => handleBoxClick(e, 2, 1)}
+              onClick={(e) => handleBoxClick(e, 1)}
             ></div>
           </div>
         </div>
@@ -518,7 +517,7 @@ if (onLine1) {
           >
             <div
               style={{ height: "20%", width: "180%", zIndex: "10" }}
-              onClick={(e) => handleBoxClick(e, 2, 4)}
+              onClick={(e) => handleBoxClick(e, 4)}
             ></div>
             <div
               style={{
@@ -540,7 +539,7 @@ if (onLine1) {
             </div>
             <div
               style={{ height: "20%", width: "180%", zIndex: "10" }}
-              onClick={(e) => handleBoxClick(e, 2, 2)}
+              onClick={(e) => handleBoxClick(e, 2)}
             ></div>
           </div>
           {interactionMode == "addRemove" ? (
